@@ -42,6 +42,24 @@ dotnet run
 
 Navigate to `http://localhost:5297` (or the port specified in the console output).
 
+### 3. Use the task REST API on this device or Wi-Fi
+
+Run the HTTP development profile with `dotnet run --launch-profile http`. The task collection is available at:
+
+```text
+http://<host-ip>:5297/api/tasks
+```
+
+Replace `<host-ip>` with the computer's local network IPv4 address (on Linux, run `hostname -I`). Devices must be on the same Wi-Fi or local network, and the host firewall must allow inbound TCP port `5297`. This development API has no authentication: anyone who can reach it can read and change tasks. Use it only on a trusted local network; do not expose it to the public internet.
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | `/api/tasks` | List tasks |
+| `GET` | `/api/tasks/{id}` | Read a task |
+| `POST` | `/api/tasks` | Create a task with `{"title":"Example"}` |
+| `PUT` | `/api/tasks/{id}` | Replace title and completion state with `{"title":"Example","isComplete":true}` |
+| `DELETE` | `/api/tasks/{id}` | Delete a task |
+
 ---
 
 ## ⚙️ Configuration

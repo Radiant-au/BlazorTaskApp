@@ -1,82 +1,82 @@
-@page "/"
-@rendermode InteractiveServer
-@using Microsoft.EntityFrameworkCore
-@using MyBlazorApp.Persistence
-@inject AppDbContext Db
+    @page "/"
+    @rendermode InteractiveServer
+    @using Microsoft.EntityFrameworkCore
+    @using MyBlazorApp.Persistence
+    @inject AppDbContext Db
 
-<PageTitle>Tasks</PageTitle>
+    <PageTitle>Tasks</PageTitle>
 
-<h1>Tasks</h1>
+    <h1>Tasks</h1>
 
-<EditForm Model="item" OnValidSubmit="SaveAsync" FormName="task-form">
-    <DataAnnotationsValidator />
-    <div class="input-group mb-3" style="max-width: 36rem">
-        <InputText class="form-control" @bind-Value="item.Title" placeholder="What needs doing?" />
-        <button class="btn btn-primary" type="submit">@(item.Id == 0 ? "Add task" : "Save changes")</button>
-    </div>
-    <ValidationMessage For="() => item.Title" />
-</EditForm>
+    <EditForm Model="item" OnValidSubmit="SaveAsync" FormName="task-form">
+        <DataAnnotationsValidator />
+        <div class="input-group mb-3" style="max-width: 36rem">
+            <InputText class="form-control" @bind-Value="item.Title" placeholder="What needs doing?" />
+            <button class="btn btn-primary" type="submit">@(item.Id == 0 ? "Add task" : "Save changes")</button>
+        </div>
+        <ValidationMessage For="() => item.Title" />
+    </EditForm>
 
-@if (tasks.Count == 0)
-{
-    <p>No tasks yet.</p>
-}
-else
-{
-    <ul class="list-group" style="max-width: 36rem">
-        @foreach (var task in tasks)
-        {
-            <li class="list-group-item d-flex align-items-center gap-2" @key="task.Id">
-                <input type="checkbox" checked="@task.IsComplete" @onchange="e => SetCompleteAsync(task, (bool)e.Value!)" aria-label="Mark @task.Title complete" />
-                <span class="flex-grow-1">@task.Title</span>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(task)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(task.Id)">Delete</button>
-            </li>
-        }
-    </ul>
-}
-
-@code {
-    private List<TodoItem> tasks = [];
-    private TodoItem item = new();
-
-    protected override async Task OnInitializedAsync() => await LoadAsync();
-
-    private async Task LoadAsync() => tasks = await Db.TodoItems.OrderBy(task => task.Id).ToListAsync();
-
-    private async Task SaveAsync()
+    @if (tasks.Count == 0)
     {
-        if (item.Id == 0)
-        {
-            Db.TodoItems.Add(item);
-        }
-        else
-        {
-            var existing = await Db.TodoItems.FindAsync(item.Id);
-            if (existing is null) return;
-            existing.Title = item.Title;
-        }
-
-        await Db.SaveChangesAsync();
-        item = new();
-        await LoadAsync();
+        <p>No tasks yet.</p>
+    }
+    else
+    {
+        <ul class="list-group" style="max-width: 36rem">
+            @foreach (var task in tasks)
+            {
+                <li class="list-group-item d-flex align-items-center gap-2" @key="task.Id">
+                    <input type="checkbox" checked="@task.IsComplete" @onchange="e => SetCompleteAsync(task, (bool)e.Value!)" aria-label="Mark @task.Title complete" />
+                    <span class="flex-grow-1">@task.Title</span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(task)">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(task.Id)">Delete</button>
+                </li>
+            }
+        </ul>
     }
 
-    private void Edit(TodoItem task) => item = new() { Id = task.Id, Title = task.Title, IsComplete = task.IsComplete };
+    @code {
+        private List<TodoItem> tasks = [];
+        private TodoItem item = new();
 
-    private async Task SetCompleteAsync(TodoItem task, bool isComplete)
-    {
-        task.IsComplete = isComplete;
-        await Db.SaveChangesAsync();
+        protected override async Task OnInitializedAsync() => await LoadAsync();
+
+        private async Task LoadAsync() => tasks = await Db.TodoItems.OrderBy(task => task.Id).ToListAsync();
+
+        private async Task SaveAsync()
+        {
+            if (item.Id == 0)
+            {
+                Db.TodoItems.Add(item);
+            }
+            else
+            {
+                var existing = await Db.TodoItems.FindAsync(item.Id);
+                if (existing is null) return;
+                existing.Title = item.Title;
+            }
+
+            await Db.SaveChangesAsync();
+            item = new();
+            await LoadAsync();
+        }
+
+        private void Edit(TodoItem task) => item = new() { Id = task.Id, Title = task.Title, IsComplete = task.IsComplete };
+
+        private async Task SetCompleteAsync(TodoItem task, bool isComplete)
+        {
+            task.IsComplete = isComplete;
+            await Db.SaveChangesAsync();
+        }
+
+        private async Task DeleteAsync(int id)
+        {
+            var task = await Db.TodoItems.FindAsync(id);
+            if (task is null) return;
+
+            Db.TodoItems.Remove(task);
+            await Db.SaveChangesAsync();
+            await LoadAsync();
+        }
     }
-
-    private async Task DeleteAsync(int id)
-    {
-        var task = await Db.TodoItems.FindAsync(id);
-        if (task is null) return;
-
-        Db.TodoItems.Remove(task);
-        await Db.SaveChangesAsync();
-        await LoadAsync();
-    }
-}

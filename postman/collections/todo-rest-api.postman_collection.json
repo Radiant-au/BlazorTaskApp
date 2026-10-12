@@ -1,0 +1,54 @@
+{
+  "info": {
+    "name": "Todo REST API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "List tasks",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tasks" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns task list', () => pm.response.to.have.status(200));", "pm.test('returns a JSON array', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }]
+    },
+    {
+      "name": "Missing task returns 404",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tasks/2147483000" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns a JSON 404', () => { pm.response.to.have.status(404); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(pm.response.json().error).to.eql('Task not found.'); });"] } }]
+    },
+    {
+      "name": "Reject blank title",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"title\":\"   \"}" }, "url": "{{baseUrl}}/api/tasks" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns 400', () => pm.response.to.have.status(400));"] } }]
+    },
+    {
+      "name": "Create task",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"title\":\"Postman API check\"}" }, "url": "{{baseUrl}}/api/tasks" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns 201', () => pm.response.to.have.status(201));", "const task = pm.response.json();", "pm.test('returns the created task', () => pm.expect(task.title).to.eql('Postman API check'));", "pm.collectionVariables.set('taskId', task.id);"] } }]
+    },
+    {
+      "name": "Read created task",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tasks/{{taskId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns 200', () => pm.response.to.have.status(200));", "pm.test('returns the created task', () => pm.expect(pm.response.json().title).to.eql('Postman API check'));"] } }]
+    },
+    {
+      "name": "Update task",
+      "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"title\":\"Postman API check updated\",\"isComplete\":true}" }, "url": "{{baseUrl}}/api/tasks/{{taskId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns 204', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Verify updated task",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tasks/{{taskId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const task = pm.response.json();", "pm.test('returns updated values', () => { pm.response.to.have.status(200); pm.expect(task.title).to.eql('Postman API check updated'); pm.expect(task.isComplete).to.eql(true); });"] } }]
+    },
+    {
+      "name": "Delete task",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/tasks/{{taskId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns 204', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Deleted task returns 404",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/tasks/{{taskId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns a JSON 404', () => { pm.response.to.have.status(404); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(pm.response.json().error).to.eql('Task not found.'); });"] } }]
+    }
+  ],
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:5297" }, { "key": "taskId", "value": "" }]
+}

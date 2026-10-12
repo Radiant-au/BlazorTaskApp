@@ -33,8 +33,57 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.MapGet("/api/tasks", async (AppDbContext db) =>
+    await db.TodoItems.AsNoTracking().OrderBy(task => task.Id).ToListAsync());
+
+app.MapGet("/api/tasks/{id:int}", async Task<IResult> (int id, AppDbContext db) =>
+{
+    var task = await db.TodoItems.AsNoTracking().FirstOrDefaultAsync(task => task.Id == id);
+    if (task is null) return Results.NotFound(new { error = "Task not found." });
+    return Results.Ok(task);
+});
+
+app.MapPost("/api/tasks", async Task<IResult> (TaskRequest request, AppDbContext db) =>
+{
+    var title = request.Title?.Trim();
+    if (string.IsNullOrWhiteSpace(title) || title.Length > 120)
+        return Results.BadRequest(new { error = "Title must contain 1 to 120 non-whitespace characters." });
+
+    var task = new TodoItem { Title = title, IsComplete = request.IsComplete ?? false };
+    db.TodoItems.Add(task);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/tasks/{task.Id}", task);
+});
+
+app.MapPut("/api/tasks/{id:int}", async Task<IResult> (int id, TaskRequest request, AppDbContext db) =>
+{
+    var title = request.Title?.Trim();
+    if (string.IsNullOrWhiteSpace(title) || title.Length > 120 || request.IsComplete is null)
+        return Results.BadRequest(new { error = "A title of 1 to 120 non-whitespace characters and an isComplete value are required." });
+
+    var task = await db.TodoItems.FindAsync(id);
+    if (task is null) return Results.NotFound(new { error = "Task not found." });
+
+    task.Title = title;
+    task.IsComplete = request.IsComplete.Value;
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+app.MapDelete("/api/tasks/{id:int}", async Task<IResult> (int id, AppDbContext db) =>
+{
+    var task = await db.TodoItems.FindAsync(id);
+    if (task is null) return Results.NotFound(new { error = "Task not found." });
+
+    db.TodoItems.Remove(task);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+sealed record TaskRequest(string? Title, bool? IsComplete);
